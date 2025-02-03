@@ -1,6 +1,7 @@
 package itstep.learning.servlets;
 
 import com.google.gson.Gson;
+import com.google.inject.Singleton;
 import itstep.learning.rest.RestResponse;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
@@ -12,7 +13,9 @@ import java.io.IOException;
 import java.time.Instant;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
-@WebServlet("/time")
+
+//@WebServlet("/time")
+@Singleton
 
 public class TimeServlet extends HttpServlet {
     private final Gson gson = new Gson();
