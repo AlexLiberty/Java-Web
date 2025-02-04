@@ -1,24 +1,20 @@
 package itstep.learning.servlets;
-
 import com.google.gson.Gson;
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
-import com.mysql.cj.jdbc.Driver;
 import itstep.learning.models.UserSignupFormModel;
 import itstep.learning.rest.RestResponse;
-//import jakarta.inject.Singleton;
+import itstep.learning.services.db.DbService;
+import itstep.learning.services.kdf.KdfService;
 import itstep.learning.services.random.RandomService;
+import itstep.learning.services.time.TimeService;
 import jakarta.servlet.ServletException;
-import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 
-
 import java.io.IOException;
 import java.sql.*;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Map;
 
 //@WebServlet("/home")
@@ -27,10 +23,17 @@ import java.util.Map;
 public class HomeServlet extends HttpServlet {
     private final Gson gson = new Gson();
     private final RandomService randomService;
+    private final KdfService kdfService;
+    private final DbService dbService;
+    private final TimeService timeService;
 
     @Inject
-    public HomeServlet(RandomService randomService) {
+    public HomeServlet(RandomService randomService, KdfService kdfService, DbService dbService, TimeService timeService)
+    {
         this.randomService = randomService;
+        this.kdfService = kdfService;
+        this.dbService = dbService;
+        this.timeService = timeService;
     }
 
     @Override
@@ -38,7 +41,8 @@ public class HomeServlet extends HttpServlet {
         String message;
         //підключення до бази даних
         try {
-            DriverManager.registerDriver(
+
+           /* DriverManager.registerDriver(
                     new Driver()
             );
             String connectionString = "jdbc:mysql://localhost:3308/javaDb";
@@ -46,10 +50,10 @@ public class HomeServlet extends HttpServlet {
                     connectionString,
                     "user1",
                     "pass123"
-            );
+            );*/
 
             String sql = "SELECT CURRENT_TIMESTAMP"; //запит
-            Statement statement = connection.createStatement(); // інструмент передачі запиту у базу даних
+            Statement statement = dbService.getConnection().createStatement(); // інструмент передачі запиту у базу даних
             ResultSet resultSet = statement.executeQuery(sql); // виконання запиту, використовуючи різні інструменти
             resultSet.next(); //
 
@@ -74,7 +78,7 @@ public class HomeServlet extends HttpServlet {
                 new RestResponse()
                 .setResourceUrl("POST /time")
                 .setStatus(200)
-                .setMessage(message + randomService.randomInt())
+                .setMessage(message + " " + timeService.getIsoTime() + " " + randomService.randomInt() + " Hash: " + kdfService.dk("123", "456"))
         );
     }
 
