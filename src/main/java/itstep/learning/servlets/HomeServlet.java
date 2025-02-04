@@ -78,7 +78,7 @@ public class HomeServlet extends HttpServlet {
                 new RestResponse()
                 .setResourceUrl("POST /time")
                 .setStatus(200)
-                .setMessage(message + " " + timeService.getIsoTime() + " " + randomService.randomInt() + " Hash: " + kdfService.dk("123", "456"))
+                .setMessage(message + " Time " + timeService.getIsoTime() + " Random " + randomService.randomInt() + " Hash: " + kdfService.dk("123", "456"))
         );
     }
 
