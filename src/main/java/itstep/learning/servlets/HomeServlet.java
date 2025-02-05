@@ -2,6 +2,7 @@ package itstep.learning.servlets;
 import com.google.gson.Gson;
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
+import itstep.learning.dal.dao.DataContext;
 import itstep.learning.models.UserSignupFormModel;
 import itstep.learning.rest.RestResponse;
 import itstep.learning.services.db.DbService;
@@ -26,14 +27,16 @@ public class HomeServlet extends HttpServlet {
     private final KdfService kdfService;
     private final DbService dbService;
     private final TimeService timeService;
+    private final DataContext dataContext;
 
     @Inject
-    public HomeServlet(RandomService randomService, KdfService kdfService, DbService dbService, TimeService timeService)
+    public HomeServlet(RandomService randomService, KdfService kdfService, DbService dbService, TimeService timeService, DataContext dataContext)
     {
         this.randomService = randomService;
         this.kdfService = kdfService;
         this.dbService = dbService;
         this.timeService = timeService;
+        this.dataContext = dataContext;
     }
 
     @Override
@@ -74,11 +77,15 @@ public class HomeServlet extends HttpServlet {
             message = e.getMessage();
         }
 
+        String msg = dataContext.getUserDao().installTables()
+                ? "Install OK"
+                : "Install Fail";
+
         sendJson(resp,
                 new RestResponse()
                 .setResourceUrl("POST /time")
                 .setStatus(200)
-                .setMessage(message + " Time " + timeService.getIsoTime() + " Random " + randomService.randomInt() + " Hash: " + kdfService.dk("123", "456"))
+                .setMessage(message + " Time " + timeService.getIsoTime() + " Random " + randomService.randomInt() + " Hash: " + kdfService.dk("123", "456") + " DATABASE: " + msg)
         );
     }
 
