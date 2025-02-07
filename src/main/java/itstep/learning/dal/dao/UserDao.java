@@ -16,7 +16,7 @@ public class UserDao {
     }
 
     public boolean installTables(){
-        return installUsers() && installUserAccess();
+        return installUsers() && installUserAccess() && installUserRole();
     }
 
     private boolean installUsers(){
@@ -59,6 +59,30 @@ public class UserDao {
         catch (SQLException ex)
         {
            logger.warning("UserDao::installUserAccess");
+            ex.getMessage();
+        }
+        return  false;
+    }
+
+    private boolean installUserRole(){
+        String sql = "CREATE TABLE IF NOT EXISTS user_role("
+                + "id VARCHAR(16) PRIMARY KEY DEFAULT ( UUID()),"
+                + "description VARCHAR(255) NOT NULL,"
+                + "canCreate BOOLEAN NOT NULL DEFAULT FALSE,"
+                + "canRead BOOLEAN NOT NULL DEFAULT TRUE,"
+                + "canUpdate BOOLEAN NOT NULL DEFAULT FALSE,"
+                + "canDelete BOOLEAN NOT NULL DEFAULT FALSE"
+                + ") ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;";
+
+        try(Statement statement = connection.createStatement())
+        {
+            statement.executeUpdate(sql);
+            logger.info("UserDao::installUserRole OK");
+            return true;
+        }
+        catch (SQLException ex)
+        {
+            logger.warning("UserDao::installUserRole");
             ex.getMessage();
         }
         return  false;
