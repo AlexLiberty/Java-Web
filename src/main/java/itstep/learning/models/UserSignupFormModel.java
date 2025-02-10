@@ -7,7 +7,6 @@ public class UserSignupFormModel {
     private String name;
     private String email;
     private String password;
-    private Date birthdate;
     private String login;
     private String address;
     private List<Phone> phoneNumbers;
@@ -38,18 +37,6 @@ public class UserSignupFormModel {
 
     public String getPassword() {
         return password;
-    }
-
-    public void setPassword(String password) {
-        this.password = password;
-    }
-
-    public Date getBirthdate() {
-        return birthdate;
-    }
-
-    public void setBirthdate(Date birthdate) {
-        this.birthdate = birthdate;
     }
 
     public String getLogin() {

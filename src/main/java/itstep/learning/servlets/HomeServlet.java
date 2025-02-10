@@ -3,6 +3,7 @@ import com.google.gson.Gson;
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
 import itstep.learning.dal.dao.DataContext;
+import itstep.learning.dal.dto.User;
 import itstep.learning.models.UserSignupFormModel;
 import itstep.learning.rest.RestResponse;
 import itstep.learning.services.db.DbService;
@@ -97,7 +98,13 @@ public class HomeServlet extends HttpServlet {
         RestResponse restResponse =
                 new RestResponse()
                         .setResourceUrl("POST /home")
-                        .setCacheTime(0);
+                        .setCacheTime(0)
+                        .setMeta(Map.of(
+                                "dataType", "object",
+                                "read", "GET /home",
+                                "update", "PUT /home",
+                                "delete", "DELETE /home"
+                        ));
         try
         {
             model = gson.fromJson(body, UserSignupFormModel.class);
@@ -110,17 +117,24 @@ public class HomeServlet extends HttpServlet {
             );
             return;
         }
-        sendJson(resp, restResponse
-                        .setStatus(201)
-                        .setMessage("Created")
-                        .setMeta(Map.of(
-                                "dataType", "object",
-                                "read", "GET /home",
-                                "update", "PUT /home",
-                                "delete", "DELETE /home"
-                        ))
-                        .setDate(model)
-    );
+
+        User user = dataContext.getUserDao().addUser(model);
+        if( user == null)
+        {
+            restResponse
+                    .setStatus(507)
+                    .setMessage("DB Error")
+                    .setDate(model);
+        }
+        else
+        {
+            restResponse
+                    .setStatus(201)
+                    .setMessage("Created")
+                    .setDate(model);
+        }
+
+        sendJson(resp, restResponse);
     }
 
     private void sendJson(HttpServletResponse resp, RestResponse restResponse) throws IOException {
