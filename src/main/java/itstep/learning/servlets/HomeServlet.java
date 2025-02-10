@@ -1,11 +1,11 @@
 package itstep.learning.servlets;
-import com.google.gson.Gson;
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
 import itstep.learning.dal.dao.DataContext;
 import itstep.learning.dal.dto.User;
 import itstep.learning.models.UserSignupFormModel;
 import itstep.learning.rest.RestResponse;
+import itstep.learning.rest.RestService;
 import itstep.learning.services.db.DbService;
 import itstep.learning.services.kdf.KdfService;
 import itstep.learning.services.random.RandomService;
@@ -23,21 +23,22 @@ import java.util.Map;
 @Singleton
 
 public class HomeServlet extends HttpServlet {
-    private final Gson gson = new Gson();
     private final RandomService randomService;
     private final KdfService kdfService;
     private final DbService dbService;
     private final TimeService timeService;
     private final DataContext dataContext;
+    private final RestService restService;
 
     @Inject
-    public HomeServlet(RandomService randomService, KdfService kdfService, DbService dbService, TimeService timeService, DataContext dataContext)
+    public HomeServlet(RandomService randomService, KdfService kdfService, DbService dbService, TimeService timeService, DataContext dataContext, RestService restService)
     {
         this.randomService = randomService;
         this.kdfService = kdfService;
         this.dbService = dbService;
         this.timeService = timeService;
         this.dataContext = dataContext;
+        this.restService = restService;
     }
 
     @Override
@@ -45,16 +46,6 @@ public class HomeServlet extends HttpServlet {
         String message;
         //підключення до бази даних
         try {
-
-           /* DriverManager.registerDriver(
-                    new Driver()
-            );
-            String connectionString = "jdbc:mysql://localhost:3308/javaDb";
-            Connection connection = DriverManager.getConnection(
-                    connectionString,
-                    "user1",
-                    "pass123"
-            );*/
 
             String sql = "SELECT CURRENT_TIMESTAMP"; //запит
             Statement statement = dbService.getConnection().createStatement(); // інструмент передачі запиту у базу даних
@@ -82,7 +73,7 @@ public class HomeServlet extends HttpServlet {
                 ? "Install OK"
                 : "Install Fail";
 
-        sendJson(resp,
+        restService.SendResponse(resp,
                 new RestResponse()
                 .setResourceUrl("POST /time")
                 .setStatus(200)
@@ -107,11 +98,11 @@ public class HomeServlet extends HttpServlet {
                         ));
         try
         {
-            model = gson.fromJson(body, UserSignupFormModel.class);
+            model = restService.fromJson(body, UserSignupFormModel.class);
         }
         catch (Exception ex)
         {
-            sendJson(resp, restResponse
+            restService.SendResponse(resp, restResponse
                     .setStatus(422)
                     .setMessage(ex.getMessage())
             );
@@ -134,21 +125,11 @@ public class HomeServlet extends HttpServlet {
                     .setDate(model);
         }
 
-        sendJson(resp, restResponse);
-    }
-
-    private void sendJson(HttpServletResponse resp, RestResponse restResponse) throws IOException {
-        resp.setContentType("application/json");
-        resp.setHeader("Access-Control-Allow-Origin", "http://localhost:5173"); //CORS
-
-        resp.getWriter().print(
-                gson.toJson(restResponse)
-        );
+        restService.SendResponse(resp, restResponse);
     }
 
     @Override
-    protected void doOptions(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
-        resp.setHeader("Access-Control-Allow-Origin", "http://localhost:5173"); //CORS
-        resp.setHeader("Access-Control-Allow-Headers", "content-type"); //дозволити json
+    protected void doOptions(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException{
+      restService.setCorsHeaders(resp);
     }
 }
