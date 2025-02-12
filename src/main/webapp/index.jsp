@@ -6,6 +6,8 @@
 <body>
 <a href = "home">Home</a>
 <a href = "time">Time</a>
+<a href = "user">User</a>
+<a href = "random?type=string&length=10">Random</a>
 <h1>JSP</h1>
 <h2>Вирази</h2>
 <%= 2 + 3 %>
