@@ -7,11 +7,10 @@ import itstep.learning.services.db.DbService;
 import itstep.learning.services.kdf.KdfService;
 import itstep.learning.services.random.RandomService;
 
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.SQLException;
-import java.sql.Statement;
+import java.sql.*;
+import java.util.Objects;
 import java.util.UUID;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 
 @Singleton
@@ -20,10 +19,14 @@ public class UserDao {
     private final Logger logger;
     private final KdfService kdfService;
     private final RandomService randomService;
+    private final DbService dbService;
+
+
 
 @Inject
     public UserDao(DbService dbService, Logger logger, KdfService kdfService, RandomService randomService) throws SQLException {
-        this.connection = dbService.getConnection();
+    this.dbService = dbService;
+    this.connection = dbService.getConnection();
         this.logger = logger;
         this.kdfService = kdfService;
         this.randomService = randomService;
@@ -67,7 +70,7 @@ public class UserDao {
 
         sql = " INSERT INTO user_access (user_access_id, user_id, role_id, login, salt, dk)"
                 + " VALUES (UUID(), ?, 'quest', ?,?,?) ";
-        try(PreparedStatement prep = this.connection.prepareStatement(sql))
+        try(PreparedStatement prep = dbService.getConnection().prepareStatement(sql))
         {
             prep.setString(1, user.getUserId().toString());
             prep.setString(2, user.getEmail().toString());
@@ -76,6 +79,7 @@ public class UserDao {
             prep.setString(3, salt);
             prep.setString(4, kdfService.dk(userModel.getPassword(), salt));
             prep.executeUpdate();
+            this.dbService.getConnection().commit();
         }
         catch (SQLException ex)
         {
@@ -92,6 +96,34 @@ public class UserDao {
         }
 
         return user;
+    }
+
+    public User authorize(String login, String password)
+    {
+        String sql = "SELECT * FROM user_access ua " +
+                "JOIN users u ON ua.user_id = u.userId" +
+                " WHERE ua.login = ?";
+
+        try (PreparedStatement prep =
+                     dbService.getConnection().prepareStatement(sql))
+        {
+            prep.setString(1, login);
+            ResultSet rs = prep.executeQuery();
+            if (rs.next())
+            {
+                String dk = kdfService.dk(password, rs.getString("salt"));
+                if (Objects.equals(dk, rs.getString("dk")))
+                {
+                    return User.fromResultSet(rs);
+                }
+            }
+        }
+        catch (SQLException ex)
+        {
+            logger.log( Level.WARNING,"UserDao::authorize {0}", ex.getMessage() );
+        }
+
+        return null;
     }
 
     public boolean installTables(){

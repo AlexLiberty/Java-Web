@@ -16,7 +16,7 @@ public class RestService {
     }
 
     public void setCorsHeaders(HttpServletResponse resp) {
-        resp.setHeader("Access-Control-Allow-Origin", "*"); //CORS http://localhost:5174
+        resp.setHeader("Access-Control-Allow-Origin", "*"); //CORS http://localhost:5173
         resp.setHeader("Access-Control-Allow-Headers", "authorization, content-type"); //дозволити json
     }
 
