@@ -87,7 +87,95 @@ public class UserServlet extends HttpServlet {
             return;
         }
 
-        restResponse.setStatus(200).setDate(user).setCacheTime(600);
+        restResponse.setStatus(200)
+                .setDate(user)
+                .setCacheTime(600);
+        restService.SendResponse(resp, restResponse);
+    }
+
+    @Override
+    protected void doPut(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
+
+        RestResponse restResponse =
+                new RestResponse()
+                        .setResourceUrl("PUT /user")
+                        .setCacheTime(0)
+                        .setMeta(Map.of(
+                                "dataType", "object",
+                                "read", "GET /user",
+                                "update", "PUT /user",
+                                "delete", "DELETE /user"
+                        ));
+
+        User userUpdates;
+
+        try
+        {
+            userUpdates = restService.fromBody(req, User.class);
+        }
+        catch (Exception ex)
+        {
+            restService.SendResponse(resp, restResponse
+                    .setStatus(422)
+                    .setMessage(ex.getMessage())
+            );
+
+            return;
+        }
+
+        if(userUpdates == null || userUpdates.getUserId() == null)
+        {
+            restResponse
+                    .setStatus(422)
+                    .setMessage("Unparseable data or identity undefined");
+            return;
+        }
+
+        User user = dataContext
+                .getUserDao()
+                .getUserById(userUpdates.getUserId());
+        if(user == null)
+        {
+            restResponse
+                    .setStatus(404)
+                    .setMessage("User not found");
+            return;
+        }
+
+        if (!dataContext
+                .getUserDao()
+                .update(userUpdates)){
+            restResponse
+                    .setStatus(500)
+                    .setMessage("Server error");
+            return;
+        }
+
+        restResponse
+                .setStatus(202)
+                .setDate(userUpdates)
+                .setCacheTime(0);;
+        restService.SendResponse(resp, restResponse);
+    }
+
+    @Override
+    protected void doDelete(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
+
+    RestResponse restResponse =
+                new RestResponse()
+                        .setResourceUrl("DELETE /user")
+                        .setCacheTime(0)
+                        .setMeta(Map.of(
+                                "dataType", "object",
+                                "read", "GET /user",
+                                "update", "PUT /user",
+                                "delete", "DELETE /user"
+                        ));
+
+        restResponse
+                .setStatus(202)
+                .setMessage("DB Error")
+                .setDate("Comming soon");
         restService.SendResponse(resp, restResponse);
     }
 
@@ -96,3 +184,4 @@ public class UserServlet extends HttpServlet {
         restService.setCorsHeaders(resp);
     }
 }
+

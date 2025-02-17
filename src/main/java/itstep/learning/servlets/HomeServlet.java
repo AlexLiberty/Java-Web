@@ -16,6 +16,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.sql.*;
 import java.util.Map;
 
@@ -84,7 +85,7 @@ public class HomeServlet extends HttpServlet {
     @Override
     protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
 
-        String body = new String(req.getInputStream().readAllBytes());
+
         UserSignupFormModel model;
         RestResponse restResponse =
                 new RestResponse()
@@ -98,7 +99,7 @@ public class HomeServlet extends HttpServlet {
                         ));
         try
         {
-            model = restService.fromJson(body, UserSignupFormModel.class);
+            model = restService.fromBody(req, UserSignupFormModel.class);
         }
         catch (Exception ex)
         {

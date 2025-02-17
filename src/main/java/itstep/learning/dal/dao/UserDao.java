@@ -8,6 +8,8 @@ import itstep.learning.services.kdf.KdfService;
 import itstep.learning.services.random.RandomService;
 
 import java.sql.*;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Objects;
 import java.util.UUID;
 import java.util.logging.Level;
@@ -30,6 +32,43 @@ public class UserDao {
         this.logger = logger;
         this.kdfService = kdfService;
         this.randomService = randomService;
+}
+
+public User getUserById(String id)
+{
+    UUID uuid;
+
+    try
+    {
+        uuid = UUID.fromString(id);
+
+    }
+    catch (Exception ex)
+    {
+        logger.log(Level.WARNING, "UserDao::getUserById Parse error: {0}", id);
+        return null;
+    }
+    return getUserById(uuid);
+}
+
+public User getUserById(UUID uuid){
+    String sql = String.format("SELECT * FROM users u WHERE u.userId = '%s'",
+            uuid.toString());
+    try(Statement stmt = dbService.getConnection().createStatement())
+    {
+        ResultSet rs = stmt.executeQuery(sql);
+        if(rs.next())
+        {
+            return User.fromResultSet(rs);
+        }
+    }
+    catch (Exception ex)
+    {
+        logger.log(Level.WARNING,
+                "UserDao::getUserById Parse error: {0}, {1}",
+                new Object[] {ex.getMessage(), sql});
+    }
+    return null;
 }
 
     public User addUser(UserSignupFormModel userModel)
@@ -197,5 +236,54 @@ public class UserDao {
             ex.getMessage();
         }
         return  false;
+    }
+
+    public boolean update (User user)
+    {
+        Map<String, Object> data = new HashMap<>();
+
+        if(user.getName() != null)
+        {
+            data.put ("name", user.getName());
+        }
+
+        if(user.getPhone() != null)
+        {
+            data.put ("phone", user.getPhone());
+        }
+
+        if(data.isEmpty()) return true;
+
+        //TODO : convert to StringBuilder
+
+        String sql = "UPDATE users SET ";
+
+        boolean isFirst = true;
+
+        for(Map.Entry<String, Object> entry : data.entrySet())
+        {
+            if(isFirst) isFirst = false;
+            else sql += ", ";
+            sql += entry.getKey() + " = ? ";
+        }
+
+        sql += "WHERE userId = ?";
+
+        try(PreparedStatement prep = dbService.getConnection().prepareStatement(sql))
+        {
+            int param = 1;
+            for(Map.Entry<String, Object> entry: data.entrySet())
+            {
+                prep.setObject(param, entry.getValue());
+                param += 1;
+            }
+            prep.setString(param, user.getUserId().toString());
+            prep.execute();
+            return true;
+        }
+        catch (SQLException e) {
+            logger.log(Level.WARNING, "");
+        }
+        return false;
     }
 }

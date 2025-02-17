@@ -12,7 +12,7 @@ public class User {
 
     public static User fromResultSet(ResultSet rs) throws SQLException {
         User user = new User();
-        user.setUserId(UUID.fromString(rs.getString("user_id")));
+        user.setUserId(UUID.fromString(rs.getString("userId")));
         user.setName(rs.getString("name"));
         user.setEmail(rs.getString("email"));
         user.setPhone(rs.getString("phone"));
