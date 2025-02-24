@@ -3,7 +3,10 @@ package itstep.learning.servlets;
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
 import itstep.learning.dal.dao.DataContext;
+import itstep.learning.dal.dto.AccessToken;
 import itstep.learning.dal.dto.User;
+import itstep.learning.dal.dto.UserAccess;
+import itstep.learning.models.UserAuthModel;
 import itstep.learning.rest.RestResponse;
 import itstep.learning.rest.RestService;
 import jakarta.servlet.ServletException;
@@ -83,8 +86,8 @@ public class UserServlet extends HttpServlet {
                     .setDate("Format error splytting by"));
             return;
         }
-        User user = dataContext.getUserDao().authorize(parts [0], parts[1]);
-        if(user == null)
+        UserAccess userAccess = dataContext.getUserDao().authorize(parts [0], parts[1]);
+        if(userAccess == null)
         {
             restService.SendResponse(resp, restResponse
                     .setStatus(401)
@@ -92,8 +95,11 @@ public class UserServlet extends HttpServlet {
             return;
         }
 
+        AccessToken token = dataContext.getAccessTokenDao().create(userAccess);
+        User user = dataContext.getUserDao().getUserById(userAccess.getUserId());
+
         restResponse.setStatus(200)
-                .setDate(user)
+                .setDate(new UserAuthModel(user, userAccess, token))
                 .setCacheTime(600);
         restService.SendResponse(resp, restResponse);
     }
@@ -110,6 +116,31 @@ public class UserServlet extends HttpServlet {
                                 "update", "PUT /user",
                                 "delete", "DELETE /user"
                         ));
+
+        // Перевіряємо авторизацію за токеном
+        String authHeader = req.getHeader( "Authorization" );
+        if( authHeader == null ) {
+            restService.SendResponse( resp,
+                    restResponse.setStatus( 401 )
+                            .setDate( "Authorization header required" ) );
+            return;
+        }
+        String authScheme = "Bearer ";
+        if( ! authHeader.startsWith( authScheme ) ) {
+            restService.SendResponse( resp,
+                    restResponse.setStatus( 401 )
+                            .setDate( "Authorization scheme error" ) );
+            return;
+        }
+        String credentials = authHeader.substring( authScheme.length() ) ;
+
+        UserAccess userAccess = dataContext.getAccessTokenDao().getUserAccess( credentials );
+        if( userAccess == null ) {
+            restService.SendResponse( resp,
+                    restResponse.setStatus( 401 )
+                            .setDate( "Token expires or invalid" ) );
+            return;
+        }
 
         User userUpdates;
 
