@@ -14,17 +14,22 @@ import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.util.Base64;
 import java.util.Map;
+import java.util.UUID;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 @Singleton
 public class UserServlet extends HttpServlet {
     private final DataContext dataContext;
     private final RestService restService;
+    private final Logger logger;
 
 @Inject
-    public UserServlet(DataContext dataContext, RestService restService) {
+    public UserServlet(DataContext dataContext, RestService restService, Logger logger) {
         this.dataContext = dataContext;
         this.restService = restService;
-    }
+        this.logger = logger;
+}
 
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
@@ -171,11 +176,52 @@ public class UserServlet extends HttpServlet {
                                 "update", "PUT /user",
                                 "delete", "DELETE /user"
                         ));
+    String userId = req.getParameter("id"); //user?id=...
+        if(userId == null)
+        {
+            restService.SendResponse(resp, restResponse
+                    .setStatus(400)
+                    .setDate("Missing required ID"));
+        }
+        UUID userUuid;
+        try
+        {
+            userUuid = UUID.fromString(userId);
+        }
+        catch (Exception ignore)
+        {
+            restService.SendResponse(resp, restResponse
+                    .setStatus(400)
+                    .setDate("Invalid Id format"));
+            return;
+        }
+
+        User user = dataContext.getUserDao().getUserById(userUuid);
+
+        if(user == null)
+        {
+            restService.SendResponse(resp, restResponse
+                    .setStatus(401)
+                    .setDate("Unauthorized"));
+            return;
+        }
+        try
+        {
+            dataContext.getUserDao().deleteAsync(user).get();
+        }
+        catch (Exception ex)
+        {
+            logger.log(Level.SEVERE, "deleteAsync fail: {0}", ex.getMessage());
+            restService.SendResponse(resp, restResponse
+                    .setStatus(500)
+                    .setDate("Server error. See server's logs"));
+            return;
+        }
 
         restResponse
                 .setStatus(202)
-                .setMessage("DB Error")
-                .setDate("Comming soon");
+                .setDate("Deleted")
+                .setCacheTime(0);
         restService.SendResponse(resp, restResponse);
     }
 

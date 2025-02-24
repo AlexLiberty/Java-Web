@@ -1,5 +1,6 @@
 package itstep.learning.dal.dto;
 
+import java.util.Date;
 import java.util.UUID;
 
 public class UserAccess
@@ -10,6 +11,15 @@ public class UserAccess
     private String salt;
     private String dk;
     private String roleId;
+    private Date deleteMoment;
+
+    public Date getDeleteMoment() {
+        return deleteMoment;
+    }
+
+    public void setDeleteMoment(Date deleteMoment) {
+        this.deleteMoment = deleteMoment;
+    }
 
     public String getRoleId() {
         return roleId;

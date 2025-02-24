@@ -70,7 +70,8 @@ public class HomeServlet extends HttpServlet {
             message = e.getMessage();
         }
 
-        String msg = dataContext.getUserDao().installTables()
+        String msg = dataContext.getAccessTokenDao().installTables()
+                && dataContext.getUserDao().installTables()
                 ? "Install OK"
                 : "Install Fail";
 
