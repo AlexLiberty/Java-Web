@@ -100,7 +100,6 @@ public class UserServlet extends HttpServlet {
 
     @Override
     protected void doPut(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
-
         RestResponse restResponse =
                 new RestResponse()
                         .setResourceUrl("PUT /user")
@@ -114,52 +113,45 @@ public class UserServlet extends HttpServlet {
 
         User userUpdates;
 
-        try
-        {
+        try {
             userUpdates = restService.fromBody(req, User.class);
-        }
-        catch (Exception ex)
-        {
+        } catch (Exception ex) {
             restService.SendResponse(resp, restResponse
                     .setStatus(422)
                     .setMessage(ex.getMessage())
             );
-
             return;
         }
 
-        if(userUpdates == null || userUpdates.getUserId() == null)
-        {
-            restResponse
+        if (userUpdates == null || userUpdates.getUserId() == null) {
+            restService.SendResponse(resp, restResponse
                     .setStatus(422)
-                    .setMessage("Unparseable data or identity undefined");
+                    .setMessage("Unparseable data or identity undefined"));
             return;
         }
 
-        User user = dataContext
-                .getUserDao()
-                .getUserById(userUpdates.getUserId());
-        if(user == null)
-        {
-            restResponse
+        User user = dataContext.getUserDao().getUserById(userUpdates.getUserId());
+        if (user == null) {
+            restService.SendResponse(resp, restResponse
                     .setStatus(404)
-                    .setMessage("User not found");
+                    .setMessage("User not found"));
             return;
         }
 
-        if (!dataContext
-                .getUserDao()
-                .update(userUpdates)){
-            restResponse
+        try {
+            dataContext.getUserDao().updateAsync(userUpdates).get();
+        } catch (Exception ex) {
+            logger.log(Level.SEVERE, "updateAsync fail: {0}", ex.getMessage());
+            restService.SendResponse(resp, restResponse
                     .setStatus(500)
-                    .setMessage("Server error");
+                    .setMessage("Server error. See server's logs"));
             return;
         }
 
         restResponse
                 .setStatus(202)
                 .setDate(userUpdates)
-                .setCacheTime(0);;
+                .setCacheTime(0);
         restService.SendResponse(resp, restResponse);
     }
 

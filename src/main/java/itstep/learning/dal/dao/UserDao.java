@@ -262,54 +262,44 @@ public User getUserById(UUID uuid){
         return  false;
     }
 
-    public boolean update (User user)
-    {
-        Map<String, Object> data = new HashMap<>();
+    public Future<Boolean> updateAsync(User user) {
+        return CompletableFuture.supplyAsync(() -> {
+            Map<String, Object> data = new HashMap<>();
 
-        if(user.getName() != null)
-        {
-            data.put ("name", user.getName());
-        }
-
-        if(user.getPhone() != null)
-        {
-            data.put ("phone", user.getPhone());
-        }
-
-        if(data.isEmpty()) return true;
-
-        //TODO : convert to StringBuilder
-
-        String sql = "UPDATE users SET ";
-
-        boolean isFirst = true;
-
-        for(Map.Entry<String, Object> entry : data.entrySet())
-        {
-            if(isFirst) isFirst = false;
-            else sql += ", ";
-            sql += entry.getKey() + " = ? ";
-        }
-
-        sql += "WHERE userId = ?";
-
-        try(PreparedStatement prep = dbService.getConnection().prepareStatement(sql))
-        {
-            int param = 1;
-            for(Map.Entry<String, Object> entry: data.entrySet())
-            {
-                prep.setObject(param, entry.getValue());
-                param += 1;
+            if (user.getName() != null) {
+                data.put("name", user.getName());
             }
-            prep.setString(param, user.getUserId().toString());
-            prep.execute();
-            dbService.getConnection().commit();
-            return true;
-        }
-        catch (SQLException e) {
-            logger.log(Level.WARNING, "");
-        }
-        return false;
+            if (user.getPhone() != null) {
+                data.put("phone", user.getPhone());
+            }
+            if (data.isEmpty()) return true;
+
+            StringBuilder sql = new StringBuilder("UPDATE users SET ");
+            boolean isFirst = true;
+            for (String key : data.keySet()) {
+                if (!isFirst) {
+                    sql.append(", ");
+                }
+                sql.append(key).append(" = ?");
+                isFirst = false;
+            }
+            sql.append(" WHERE userId = ?");
+
+            try (PreparedStatement prep = dbService.getConnection().prepareStatement(sql.toString())) {
+                int param = 1;
+                for (Object value : data.values()) {
+                    prep.setObject(param++, value);
+                }
+                prep.setString(param, user.getUserId().toString());
+                prep.execute();
+                dbService.getConnection().commit();
+                return true;
+            } catch (SQLException e) {
+                logger.log(Level.WARNING, "UserDao::updateAsync {0}", e.getMessage());
+                try { dbService.getConnection().rollback(); } catch (SQLException ignore) {}
+                return false;
+            }
+        });
     }
 
     public Future deleteAsync(User user)
