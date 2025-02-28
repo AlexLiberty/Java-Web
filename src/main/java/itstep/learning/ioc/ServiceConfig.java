@@ -1,6 +1,8 @@
 package itstep.learning.ioc;
 
 import com.google.inject.AbstractModule;
+import itstep.learning.services.config.ConfigService;
+import itstep.learning.services.config.JsonConfigService;
 import itstep.learning.services.db.DbService;
 import itstep.learning.services.db.MySqlDbService;
 import itstep.learning.services.hash.HashService;
@@ -20,5 +22,6 @@ public class ServiceConfig extends AbstractModule {
        bind(KdfService.class).to(PbKdf1Service.class);
        bind(DbService.class).to(MySqlDbService.class);
        bind(TimeService.class).to(CurrentTimeService.class);
+       bind(ConfigService.class).to(JsonConfigService.class);
     }
 }

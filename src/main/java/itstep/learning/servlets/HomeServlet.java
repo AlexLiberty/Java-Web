@@ -6,6 +6,7 @@ import itstep.learning.dal.dto.User;
 import itstep.learning.models.UserSignupFormModel;
 import itstep.learning.rest.RestResponse;
 import itstep.learning.rest.RestService;
+import itstep.learning.services.config.ConfigService;
 import itstep.learning.services.db.DbService;
 import itstep.learning.services.kdf.KdfService;
 import itstep.learning.services.random.RandomService;
@@ -30,9 +31,10 @@ public class HomeServlet extends HttpServlet {
     private final TimeService timeService;
     private final DataContext dataContext;
     private final RestService restService;
+    private final ConfigService configService;
 
     @Inject
-    public HomeServlet(RandomService randomService, KdfService kdfService, DbService dbService, TimeService timeService, DataContext dataContext, RestService restService)
+    public HomeServlet(RandomService randomService, KdfService kdfService, DbService dbService, TimeService timeService, DataContext dataContext, RestService restService, ConfigService configService)
     {
         this.randomService = randomService;
         this.kdfService = kdfService;
@@ -40,6 +42,7 @@ public class HomeServlet extends HttpServlet {
         this.timeService = timeService;
         this.dataContext = dataContext;
         this.restService = restService;
+        this.configService = configService;
     }
 
     @Override
@@ -79,7 +82,17 @@ public class HomeServlet extends HttpServlet {
                 new RestResponse()
                 .setResourceUrl("POST /time")
                 .setStatus(200)
-                .setMessage(message + " Time " + timeService.getIsoTime() + " Random " + randomService.randomInt() + " Hash: " + kdfService.dk("123", "456") + " DATABASE: " + msg)
+                .setMessage(message
+                        + " Time "
+                        + timeService.getIsoTime()
+                        + " Random " + randomService.randomInt()
+                        + " Hash: "
+                        + kdfService.dk("123", "456")
+                        + " DATABASE: "
+                        + msg
+                        + " JSON: "
+                        + configService.getValue("db.MySql.port").getAsInt()
+                        + " ")
         );
     }
 

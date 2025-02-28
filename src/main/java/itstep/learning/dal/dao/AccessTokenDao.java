@@ -4,6 +4,7 @@ import com.google.inject.Inject;
 import com.google.inject.Singleton;
 import itstep.learning.dal.dto.AccessToken;
 import itstep.learning.dal.dto.UserAccess;
+import itstep.learning.services.config.ConfigService;
 import itstep.learning.services.db.DbService;
 
 import java.sql.*;
@@ -17,15 +18,23 @@ public class AccessTokenDao
 {
     private final Logger logger;
     private final DbService dbService;
+    private final ConfigService configService;
+    private int tokenLifetime;
 
     @Inject
-    public AccessTokenDao(Logger logger, DbService dbService) throws SQLException  {
+    public AccessTokenDao(Logger logger, DbService dbService, ConfigService configService, ConfigService configService1) throws SQLException  {
         this.logger = logger;
         this.dbService = dbService;
+        this.tokenLifetime = 0;
+        this.configService = configService1;
     }
 
     public AccessToken create(UserAccess userAccess) {
         if (userAccess == null) return null;
+        if (tokenLifetime == 0)
+        {
+            tokenLifetime = 1000 * configService.getValue("token.lifetime").getAsInt();
+        }
 
         AccessToken activeToken = getActiveToken(userAccess.getUserAccessId());
         if (activeToken != null) {
@@ -37,7 +46,7 @@ public class AccessTokenDao
         token.setUserAccessId(userAccess.getUserAccessId());
         Date date = new Date();
         token.setIssuedAt(date);
-        token.setExpiresAt(new Date(date.getTime() + 100 * 1000));
+        token.setExpiresAt(new Date(date.getTime() + tokenLifetime));
 
         String sql = "INSERT INTO access_tokens(access_token_id, user_access_id, issued_at, expires_at) VALUES(?,?,?,?)";
         try (PreparedStatement prep = dbService.getConnection().prepareStatement(sql)) {
