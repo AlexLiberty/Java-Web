@@ -6,9 +6,11 @@ import itstep.learning.dal.dao.DataContext;
 import itstep.learning.dal.dto.AccessToken;
 import itstep.learning.dal.dto.User;
 import itstep.learning.dal.dto.UserAccess;
+import itstep.learning.models.UserAuthJwtModel;
 import itstep.learning.models.UserAuthModel;
 import itstep.learning.rest.RestResponse;
 import itstep.learning.rest.RestService;
+import itstep.learning.services.hash.HashService;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
@@ -21,17 +23,20 @@ import java.util.UUID;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+
 @Singleton
 public class UserServlet extends HttpServlet {
     private final DataContext dataContext;
     private final RestService restService;
     private final Logger logger;
+    private final HashService hashService;
 
 @Inject
-    public UserServlet(DataContext dataContext, RestService restService, Logger logger) {
+    public UserServlet(DataContext dataContext, RestService restService, Logger logger, HashService hashService) {
         this.dataContext = dataContext;
         this.restService = restService;
         this.logger = logger;
+    this.hashService = hashService;
 }
 
     @Override
@@ -98,8 +103,19 @@ public class UserServlet extends HttpServlet {
         AccessToken token = dataContext.getAccessTokenDao().create(userAccess);
         User user = dataContext.getUserDao().getUserById(userAccess.getUserId());
 
+        String jwtHeader = new String(Base64.getUrlEncoder()
+                .encode("{\"alg\": \"HS256\", \"typ\": \"JWT\" }".getBytes()));
+        String jwtPayload = new String(Base64.getUrlEncoder()
+                .encode( restService.gson.toJson(userAccess).getBytes()));
+        String jwtSignature = new String(Base64.getUrlEncoder()
+                .encode(hashService
+                        .digest("secret" + jwtHeader + "." + jwtPayload).getBytes()));
+
+        String jwtToken = jwtHeader + "." + jwtPayload + "." + jwtSignature;
+
         restResponse.setStatus(200)
-                .setDate(new UserAuthModel(user, userAccess, token))
+                //.setDate(new UserAuthModel(user, userAccess, token)) //як звичайний токен
+                .setDate(new UserAuthJwtModel(user, jwtToken)) // як JWT токен
                 .setCacheTime(600);
         restService.SendResponse(resp, restResponse);
     }
@@ -118,27 +134,12 @@ public class UserServlet extends HttpServlet {
                         ));
 
         // Перевіряємо авторизацію за токеном
-        String authHeader = req.getHeader( "Authorization" );
-        if( authHeader == null ) {
-            restService.SendResponse( resp,
-                    restResponse.setStatus( 401 )
-                            .setDate( "Authorization header required" ) );
-            return;
-        }
-        String authScheme = "Bearer ";
-        if( ! authHeader.startsWith( authScheme ) ) {
-            restService.SendResponse( resp,
-                    restResponse.setStatus( 401 )
-                            .setDate( "Authorization scheme error" ) );
-            return;
-        }
-        String credentials = authHeader.substring( authScheme.length() ) ;
+        UserAccess userAccess = (UserAccess) req.getAttribute("authUserAccess");
 
-        UserAccess userAccess = dataContext.getAccessTokenDao().getUserAccess( credentials );
         if( userAccess == null ) {
             restService.SendResponse( resp,
                     restResponse.setStatus( 401 )
-                            .setDate( "Token expires or invalid" ) );
+                            .setDate(req.getAttribute("authStatus")) );
             return;
         }
 
