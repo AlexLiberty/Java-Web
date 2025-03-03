@@ -3,12 +3,12 @@
   {
     "MySql":
     {
-      "host": "localhost",
-      "port": 3308,
+      "host": "HOST",
+      "port": "PORT",
       "schema": "",
       "params": "",
       "user": "",
-      "password": "123456",
+      "password": "password",
       "autocommit": false
     }
   },
