@@ -8,6 +8,7 @@
 <a href = "time">Time</a>
 <a href = "user">User</a>
 <a href = "random?type=string&length=10">Random</a>
+<a href = "product">Product</a>
 <h1>JSP</h1>
 <h2>Вирази</h2>
 <%= 2 + 3 %>
@@ -27,5 +28,12 @@ else {%>
     <%
 }%>
     </ul>
+<br><br><br><br>
+<form action="product" method="post" enctype="multipart/form-data">
+    <input name="field1" value="value 1"/>
+    <input name="field2" value="value 2"/>
+    <input type="file" name="file1"/>
+    <button>send</button>
+</form>
 </body>
 </html>

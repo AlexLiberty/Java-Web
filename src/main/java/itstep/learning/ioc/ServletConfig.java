@@ -4,10 +4,7 @@ import com.google.inject.servlet.ServletModule;
 import itstep.learning.filter.AuthFilter;
 import itstep.learning.filter.AuthJwtFilter;
 import itstep.learning.filter.CharsetFilter;
-import itstep.learning.servlets.HomeServlet;
-import itstep.learning.servlets.RandomServlet;
-import itstep.learning.servlets.TimeServlet;
-import itstep.learning.servlets.UserServlet;
+import itstep.learning.servlets.*;
 
 public class ServletConfig extends ServletModule {
     @Override
@@ -20,5 +17,7 @@ public class ServletConfig extends ServletModule {
     serve("/time").with(TimeServlet.class);
     serve("/user").with(UserServlet.class);
     serve("/random").with(RandomServlet.class);
+    serve("/product").with(ProductServlet.class);
+    serve("/storage/*").with(StorageServlet.class);
     }
 }
