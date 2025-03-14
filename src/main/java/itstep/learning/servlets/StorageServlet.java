@@ -78,6 +78,28 @@ public class StorageServlet extends HttpServlet {
             default: return "application/octet-stream";
         }
     }
+
+    @Override
+    protected void doDelete(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
+        String fileId = req.getPathInfo();
+
+        if (fileId == null || fileId.length() <= 1) {
+            resp.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+            resp.getWriter().write("Invalid file ID");
+            return;
+        }
+
+        fileId = fileId.substring(1);
+        boolean deleted = storageService.delete(fileId);
+
+        if (deleted) {
+            resp.setStatus(HttpServletResponse.SC_OK);
+            resp.getWriter().write("File deleted successfully");
+        } else {
+            resp.setStatus(HttpServletResponse.SC_NOT_FOUND);
+            resp.getWriter().write("File not found");
+        }
+    }
 }
 
 

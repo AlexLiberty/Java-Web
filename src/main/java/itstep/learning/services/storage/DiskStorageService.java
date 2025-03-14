@@ -34,4 +34,10 @@ public class DiskStorageService implements StorageService {
     public InputStream get(String itemId) throws IOException {
         return new FileInputStream(storagePath + itemId);
     }
+
+    @Override
+    public boolean delete(String itemId) throws IOException {
+        File file = new File(storagePath + itemId);
+        return file.exists() && file.delete();
+    }
 }
