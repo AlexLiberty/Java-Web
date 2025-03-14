@@ -5,10 +5,9 @@ import com.google.inject.Singleton;
 import itstep.learning.dal.dto.Product;
 import itstep.learning.services.db.DbService;
 
-import java.sql.PreparedStatement;
-import java.sql.SQLException;
-import java.sql.Statement;
-import java.sql.Timestamp;
+import java.sql.*;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.UUID;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -86,5 +85,54 @@ public class ProductDao
                     new Object[] {ex.getMessage(), sql});
             return null;
         }
+    }
+
+    public List<Product> getProductsByCategory(UUID categoryId) {
+        List<Product> products = new ArrayList<>();
+        String sql = "SELECT * FROM products WHERE category_id = ?";
+        try (PreparedStatement prep = dbService.getConnection().prepareStatement(sql)) {
+            prep.setString(1, categoryId.toString());
+            ResultSet resultSet = prep.executeQuery();
+            while (resultSet.next()) {
+                Product product = new Product();
+                product.setProductId(UUID.fromString(resultSet.getString("product_id")));
+                product.setCategoryId(UUID.fromString(resultSet.getString("category_id")));
+                product.setProductTitle(resultSet.getString("product_title"));
+                product.setProductDescription(resultSet.getString("product_description"));
+                product.setProductSlug(resultSet.getString("product_slug"));
+                product.setProductImageId(resultSet.getString("product_imageId"));
+                product.setPrice(resultSet.getDouble("product_price"));
+                product.setStock(resultSet.getInt("product_stock"));
+                product.setDeleteMoment(resultSet.getTimestamp("product_delete_moment"));
+                products.add(product);
+            }
+        } catch (SQLException ex) {
+            logger.log(Level.WARNING, "ProductDao::getProductsByCategory {0} sql: '{1}'", new Object[]{ex.getMessage(), sql});
+        }
+        return products;
+    }
+
+    public List<Product> getAllProducts() {
+        List<Product> products = new ArrayList<>();
+        String sql = "SELECT * FROM products";
+        try (PreparedStatement prep = dbService.getConnection().prepareStatement(sql)) {
+            ResultSet resultSet = prep.executeQuery();
+            while (resultSet.next()) {
+                Product product = new Product();
+                product.setProductId(UUID.fromString(resultSet.getString("product_id")));
+                product.setCategoryId(UUID.fromString(resultSet.getString("category_id")));
+                product.setProductTitle(resultSet.getString("product_title"));
+                product.setProductDescription(resultSet.getString("product_description"));
+                product.setProductSlug(resultSet.getString("product_slug"));
+                product.setProductImageId(resultSet.getString("product_imageId"));
+                product.setPrice(resultSet.getDouble("product_price"));
+                product.setStock(resultSet.getInt("product_stock"));
+                product.setDeleteMoment(resultSet.getTimestamp("product_delete_moment"));
+                products.add(product);
+            }
+        } catch (SQLException ex) {
+            logger.log(Level.WARNING, "ProductDao::getAllProducts {0} sql: '{1}'", new Object[]{ex.getMessage(), sql});
+        }
+        return products;
     }
 }
