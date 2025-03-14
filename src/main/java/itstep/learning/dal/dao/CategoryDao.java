@@ -3,8 +3,10 @@ package itstep.learning.dal.dao;
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
 import itstep.learning.dal.dto.Category;
+import itstep.learning.dal.dto.Product;
 import itstep.learning.services.db.DbService;
 
+import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
@@ -98,5 +100,41 @@ public class CategoryDao
         }
 
         return res;
+    }
+
+    public Category getCategoryBySlug(String slug)
+    {
+        if(slug == null)
+        {
+            return null;
+        }
+        Category category = null;
+
+        String sql = "SELECT * FROM categories c LEFT JOIN products p ON "
+                + "c.category_id = p.category_id WHERE c.category_slug = ?";
+        try(PreparedStatement prep = dbService.getConnection().prepareStatement(sql))
+        {
+            prep.setString(1, slug);
+            ResultSet rs = prep.executeQuery();
+            if (rs.next())
+            {
+                category = Category.fromResultSet(rs);
+                List<Product> products = new ArrayList<>();
+                do {
+                    try {
+                        products.add(Product.fromResultSet(rs));
+                    } catch (Exception ignore) {}
+                } while (rs.next());
+                category.setProducts(products);
+            }
+        }
+        catch (SQLException ex)
+        {
+            logger.log(
+                    Level.WARNING,
+                    "categoryDao::getCategoryBySlug {0} sql: '{1}'",
+                    new Object[] {ex.getMessage(), sql});
+        }
+        return category;
     }
 }

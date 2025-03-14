@@ -3,6 +3,7 @@ package itstep.learning.servlets;
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
 import itstep.learning.dal.dao.DataContext;
+import itstep.learning.dal.dto.Category;
 import itstep.learning.dal.dto.Product;
 import itstep.learning.rest.RestResponse;
 import itstep.learning.rest.RestService;
@@ -16,6 +17,8 @@ import jakarta.servlet.http.HttpServletResponse;
 import org.apache.commons.fileupload2.core.FileItem;
 
 import java.io.IOException;
+import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.UUID;
 
@@ -38,6 +41,7 @@ public class ProductServlet extends HttpServlet
 
     @Override
     protected void doPost( HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
+
         FormParseResult formParseResult = formParsService.parseRequest(req);
         RestResponse restResponse = new RestResponse()
                 .setResourceUrl( "POST /product" )
@@ -138,6 +142,18 @@ public class ProductServlet extends HttpServlet
     }
 
     private void getCategories(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
+        String imgPath = String.format(Locale.ROOT,
+                "%s://%s:%d%s/storage/",
+                req.getScheme(),
+                req.getServerName(),
+                req.getServerPort(),
+                req.getContextPath());
+        List<Category> categories = dataContext.getCategoryDao().getList();
+        for(Category c:categories)
+        {
+            c.setCategoryImageId(imgPath + c.getCategoryImageId());
+        }
+
         restService.SendResponse(resp,
                 new RestResponse()
                         .setResourceUrl("GET /product?type=categories")
@@ -146,12 +162,37 @@ public class ProductServlet extends HttpServlet
                         ))
                         .setStatus(200)
                         .setCacheTime(86400)
-                        .setDate(dataContext.getCategoryDao().getList()));
+                        .setDate(categories));
     }
 
-    private void getCategory(HttpServletRequest req, HttpServletResponse resp) throws ServletException
-    {
+    private void getCategory(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
+        String slug = req.getParameter("slug");
+        RestResponse restResponse = new RestResponse()
+                .setResourceUrl("GET /product?type=category&slug=" + slug)
+                .setMeta(Map.of(
+                        "dataType", "object"
+                ))
+                .setCacheTime(86400);
 
+        Category category;
+        try{category = dataContext.getCategoryDao().getCategoryBySlug(slug);}
+        catch (RuntimeException ignore)
+        {
+            restService.SendResponse(resp, restResponse
+                .setStatus(500)
+                .setDate("Take a look to the Logs"));
+        return;
+        }
+        if(category == null)
+        {
+            restService.SendResponse(resp, restResponse
+                    .setStatus(404)
+                    .setDate("Category not found"));
+            return;
+        }
+        restService.SendResponse(resp, restResponse
+                .setStatus(200)
+                .setDate(category));
     }
 
     private void getProducts(HttpServletRequest req, HttpServletResponse resp) throws ServletException

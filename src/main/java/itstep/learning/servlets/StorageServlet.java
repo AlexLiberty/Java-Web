@@ -11,10 +11,14 @@ import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.util.Set;
 
 @Singleton
 public class StorageServlet extends HttpServlet {
     private final StorageService storageService;
+    private static final Set<String> BLACKLISTED_EXTENSIONS = Set.of(
+            ".exe", ".php", ".py", ".cgi", ".sh", ".bat", ".cmd", ".pl", ".jar"
+    );
 
     @Inject
     public StorageServlet(StorageService storageService) {
@@ -23,30 +27,39 @@ public class StorageServlet extends HttpServlet {
 
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
-        String fileId = req.getPathInfo().substring(1);
+        String fileId = req.getPathInfo();
 
-        try(InputStream inputStream = storageService.get(fileId))
-        {
-            int dotPosition = fileId.lastIndexOf('.');
-            String ext = fileId.substring(dotPosition);
+        if (fileId == null || fileId.length() <= 1 || !fileId.contains(".")) {
+            resp.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+            resp.getWriter().write("Invalid file ID");
+            return;
+        }
+
+        fileId = fileId.substring(1);
+        int dotPosition = fileId.lastIndexOf('.');
+        String ext = fileId.substring(dotPosition);
+
+        if (dotPosition == fileId.length() - 1 || BLACKLISTED_EXTENSIONS.contains(ext.toLowerCase())) {
+            resp.setStatus(HttpServletResponse.SC_FORBIDDEN);
+            resp.getWriter().write("Forbidden file type");
+            return;
+        }
+
+        try (InputStream inputStream = storageService.get(fileId)) {
             resp.setContentType(mimeByExtensions(ext));
             OutputStream writer = resp.getOutputStream();
             byte[] buf = new byte[131072];
             int len;
-            while ((len = inputStream.read(buf))> 0)
-            {
+            while ((len = inputStream.read(buf)) > 0) {
                 writer.write(buf, 0, len);
             }
-        }
-        catch (IOException ex)
-        {
-            resp.setStatus(404);
+        } catch (IOException ex) {
+            resp.setStatus(HttpServletResponse.SC_NOT_FOUND);
         }
     }
 
-    private String mimeByExtensions (String ext){
-        switch (ext)
-        {
+    private String mimeByExtensions(String ext) {
+        switch (ext) {
             case ".jpg": ext = ".jpeg";
             case ".jpeg":
             case ".gif":
@@ -67,6 +80,7 @@ public class StorageServlet extends HttpServlet {
     }
 }
 
+
 /*
 http://localhost:8080/Java-Web-221/storage/123?x=10&y=20
 req.getMethod()       GET
@@ -75,4 +89,6 @@ req.getContextPath()  /Java-Web-221
 req.getServletPath()  /storage
 req.getPathInfo()     /123
 req.getQueryString()  x=10&y=20
+req.getServerName() localhost
+req.getScheme()  http
   */
