@@ -142,12 +142,8 @@ public class ProductServlet extends HttpServlet {
     }
 
     private void getCategories(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
-        String imgPath = String.format(Locale.ROOT,
-                "%s://%s:%d%s/storage/",
-                req.getScheme(),
-                req.getServerName(),
-                req.getServerPort(),
-                req.getContextPath());
+        String imgPath = getStoragePath(req);
+
         List<Category> categories = dataContext.getCategoryDao().getList();
         for (Category c : categories) {
             c.setCategoryImageId(imgPath + c.getCategoryImageId());
@@ -189,8 +185,15 @@ public class ProductServlet extends HttpServlet {
             return;
         }
 
-        List<Product> products = dataContext.getProductDao().getProductsByCategory(category.getCategoryId());
-        category.setProducts(products);
+        String imgPath = getStoragePath(req);
+        category.setCategoryImageId((imgPath + category.getCategoryImageId()));
+        for(Product p : category.getProducts())
+        {
+            p.setProductImageId(imgPath + p.getProductImageId());
+        }
+
+//        List<Product> products = dataContext.getProductDao().getProductsByCategory(category.getCategoryId());
+//        category.setProducts(products);
 
         restService.SendResponse(resp, restResponse
                 .setStatus(200)
@@ -206,5 +209,15 @@ public class ProductServlet extends HttpServlet {
                 .setStatus(200)
                 .setCacheTime(86400)
                 .setDate(products));
+    }
+
+    private String getStoragePath(HttpServletRequest req)
+    {
+        return String.format(Locale.ROOT,
+                "%s://%s:%d%s/storage/",
+                req.getScheme(),
+                req.getServerName(),
+                req.getServerPort(),
+                req.getContextPath());
     }
 }
